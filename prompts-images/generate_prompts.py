@@ -1,5 +1,6 @@
 import os
 import re
+import glob
 
 def generate_prompts(file_content, file_name):
     scenes = re.findall(r"### \*\*(Scene \d+:.*?)\*\*\n\n\*\*Setting:\*\*(.*?)\n\n\*\*Action/Visual:\*\*(.*?)\n\n", file_content, re.DOTALL)
@@ -26,20 +27,11 @@ The image should be in a 16:9 format.
         
     return prompts
 
-file_paths = [
-    "/Users/julienmiquel/dev/ghack-genmedia/scenes/1-testimonial-ad-copy-scene.md",
-    "/Users/julienmiquel/dev/ghack-genmedia/scenes/10-emotional-story-ad-copy-scene.md",
-    "/Users/julienmiquel/dev/ghack-genmedia/scenes/2-seasonal-holiday-promotion-ad-copy-scene.md",
-    "/Users/julienmiquel/dev/ghack-genmedia/scenes/3-pain-point-ad-copy-scene.md",
-    "/Users/julienmiquel/dev/ghack-genmedia/scenes/4-discount-sale-ad-copy-scene.md",
-    "/Users/julienmiquel/dev/ghack-genmedia/scenes/5-fomo-ad-copy-scene.md",
-    "/Users/julienmiquel/dev/ghack-genmedia/scenes/6-feature-benefit-ad-copy-scene.md",
-    "/Users/julienmiquel/dev/ghack-genmedia/scenes/7-social-proof-ad-copy-scene.md",
-    "/Users/julienmiquel/dev/ghack-genmedia/scenes/8-authentic-story-ad-copy-scene.md",
-    "/Users/julienmiquel/dev/ghack-genmedia/scenes/9-suspenseful-story-ad-copy-scene.md",
-]
+script_dir = os.path.dirname(os.path.abspath(__file__))
+scenes_dir = os.path.join(script_dir, "..", "scenes")
+output_dir = os.path.join(script_dir)
 
-output_dir = "/Users/julienmiquel/dev/ghack-genmedia/prompts-images"
+file_paths = glob.glob(os.path.join(scenes_dir, "*.md"))
 
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
