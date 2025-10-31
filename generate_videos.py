@@ -17,10 +17,9 @@ OUTPUT_GCS_BUCKET = os.environ.get("OUTPUT_GCS_BUCKET")
 
 # --- Script ---
 
-def show_video(gcs_uri: str, local_path: str) -> None:
+def show_video(gcs_uri: str, local_path: str, scene_name: str) -> None:
     """Downloads a video from GCS and displays it."""
-    file_name = os.path.basename(gcs_uri)
-    local_file_path = os.path.join(local_path, file_name)
+    local_file_path = os.path.join(local_path, f"{scene_name}.mp4")
     
     # Using gsutil to copy the file. Make sure gsutil is authenticated.
     os.system(f"gsutil cp {gcs_uri} {local_file_path}")
@@ -65,14 +64,14 @@ def generate_video_for_scene(client, scene_dir, output_gcs_path, local_video_pat
     print("  - Waiting for operation to complete...")
 
     while not operation.done:
-        time.sleep(60)  # Poll every 60 seconds
+        time.sleep(30)  # Poll every 30 seconds
         operation = client.operations.get(operation)
         print(f"  - Operation status: {operation}")
 
     if operation.response:
         generated_video_uri = operation.result.generated_videos[0].video.uri
         print(f"  - Video generated successfully: {generated_video_uri}")
-        show_video(generated_video_uri, local_video_path)
+        show_video(generated_video_uri, scene_dir, scene_name)
     else:
         print("  - Video generation failed or returned no response.")
 
@@ -88,15 +87,12 @@ def main():
         return
 
     client = genai.Client(vertexai=True, project=PROJECT_ID, location=LOCATION)
-    
-    local_video_path = "videos"
-    os.makedirs(local_video_path, exist_ok=True)
 
     prompts_images_dir = "prompts-images"
     scene_dirs = [d for d in glob.glob(f"{prompts_images_dir}/*") if os.path.isdir(d)]
 
     for scene_dir in scene_dirs:
-        generate_video_for_scene(client, scene_dir, OUTPUT_GCS_BUCKET, local_video_path)
+        generate_video_for_scene(client, scene_dir, OUTPUT_GCS_BUCKET, scene_dir)
 
     print("\nAll scenes processed.")
 
