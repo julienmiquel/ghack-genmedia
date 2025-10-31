@@ -1,11 +1,18 @@
 import os
 from google import genai
 from google.genai import types
+from dotenv import load_dotenv
+
+load_dotenv()
+
+PROJECT_ID = os.environ.get("PROJECT_ID")
+LOCATION = os.environ.get("LOCATION")
 
 def generate(prompt, reference_image, output_path):
   client = genai.Client(
-      vertexai=False,
-      api_key=os.environ.get("GOOGLE_CLOUD_API_KEY"),
+      vertexai=True,
+      project=PROJECT_ID,
+      location=LOCATION,
   )
 
   msg1_text1 = genai.types.Part.from_text(text=prompt)
@@ -86,8 +93,12 @@ age = protagonist_description['age']
 
 prompt = f"A photorealistic portrait of {name}, a {age}-year-old {occupation}. {appearance}. She has a focused and thoughtful expression. The background is white."
 
+# Create a directory for the images
+output_dir = "images"
+os.makedirs(output_dir, exist_ok=True)
+
 # Define the output path
-output_path = f"protagonist_anya_sharma.png"
+output_path = os.path.join(output_dir, f"protagonist_anya_sharma.png")
 
 print(f"Generating image for protagonist: {name}")
 print(f"Prompt: {prompt}")
@@ -104,7 +115,7 @@ for angle_option in angle:
   prompt = f"A photorealistic portrait with {angle_option} of {name}, a {age}-year-old {occupation}. {appearance}. She has a focused and thoughtful expression. The background is white."
 
   # Define the output path
-  output_path = f"protagonist_anya_sharma-{angle_option}.png"
+  output_path = os.path.join(output_dir, f"protagonist_anya_sharma-{angle_option}.png")
 
   print(f"Generating image for protagonist: {name}")
   print(f"Prompt: {prompt}")

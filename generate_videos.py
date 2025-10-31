@@ -5,12 +5,15 @@ import glob
 from google import genai
 from google.genai import types
 import mediapy as media
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # --- User Configuration ---
 # Please fill in your Google Cloud Project ID and a GCS bucket for video output.
-PROJECT_ID = "[your-project-id]"  # Replace with your Project ID
-LOCATION = "us-central1"
-OUTPUT_GCS_BUCKET = "gs://[your-gcs-bucket]/videos" # Replace with your GCS bucket
+PROJECT_ID = os.environ.get("PROJECT_ID")
+LOCATION = os.environ.get("LOCATION")
+OUTPUT_GCS_BUCKET = os.environ.get("OUTPUT_GCS_BUCKET")
 
 # --- Script ---
 
@@ -45,26 +48,26 @@ def generate_video_for_scene(client, scene_dir, output_gcs_path, local_video_pat
     img = types.Image.from_file(location=image_path)
 
     operation = client.models.generate_videos(
-        model="veo-2.0-generate-001",
+        model="veo-3.1-generate-preview",
         image=types.Image(
             image_bytes=img.image_bytes,
             mime_type="image/png",
         ),
         config=types.GenerateVideosConfig(
             output_gcs_uri=output_gcs_uri,
-            aspect_ratio="9:16",
+            aspect_ratio="16:9",
             number_of_videos=1,
             person_generation="allow_adult",
         ),
     )
 
-    print(f"  - Video generation started. Operation: {operation.operation.name}")
+    print(f"  - Video generation started. Operation: {operation}")
     print("  - Waiting for operation to complete...")
 
     while not operation.done:
         time.sleep(60)  # Poll every 60 seconds
         operation = client.operations.get(operation)
-        print(f"  - Operation status: {operation.state}")
+        print(f"  - Operation status: {operation}")
 
     if operation.response:
         generated_video_uri = operation.result.generated_videos[0].video.uri
