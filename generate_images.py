@@ -56,7 +56,7 @@ def generate(prompt, output_path, images_references=[]):
             f.write(chunk.parts[0].inline_data.data)
 
 if __name__ == '__main__':
-    prompts_dir = "/Users/julienmiquel/dev/ghack-genmedia/prompts-images"
+    prompts_dir = "./ghack-genmedia/prompts-images"
     
     images_references = []
     angle = ["front-facing", "side profile", "three-quarter", "over-the-shoulder", "close-up"]
