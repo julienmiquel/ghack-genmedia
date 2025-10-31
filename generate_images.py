@@ -4,12 +4,22 @@ import base64
 import os
 import re
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
+PROJECT_ID = os.environ.get("PROJECT_ID")
+LOCATION = os.environ.get("LOCATION")
+
+
+
 def generate(prompt, output_path, images_references=[]):
   client = genai.Client(
-      vertexai=False,
-      api_key=os.environ.get("GOOGLE_CLOUD_API_KEY"),
+      vertexai=True,
+      project=PROJECT_ID,
+      location=LOCATION,
   )
-
+  
   msg1_text1 = types.Part.from_text(text=prompt)
 
 
@@ -56,22 +66,20 @@ def generate(prompt, output_path, images_references=[]):
             f.write(chunk.parts[0].inline_data.data)
 
 if __name__ == '__main__':
-    prompts_dir = "./ghack-genmedia/prompts-images"
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    prompts_dir = os.path.join(script_dir, "prompts-images")
+    images_dir = os.path.join(script_dir, "images")
     
     images_references = []
-    angle = ["front-facing", "side profile", "three-quarter", "over-the-shoulder", "close-up"]
-
-    for angle_option in angle:
-
-      # Define the output path
-      if os.path.exists(f"./protagonist_anya_sharma-{angle_option}.png"):
-        output_path = f"./protagonist_anya_sharma-{angle_option}.png"
-        images_references.append(output_path)
-
-      if os.path.exists(f"product_cymbal_pod-{angle_option}.png"):
-        output_path = f"product_cymbal_pod-{angle_option}.png"
-        images_references.append(output_path)
-       
+    # Collect all generated protagonist and product images as references
+    if os.path.exists(images_dir):
+        for image_file in os.listdir(images_dir):
+            if image_file.startswith("protagonist_") or image_file.startswith("product_"):
+                images_references.append(os.path.join(images_dir, image_file))
+    
+    if not images_references:
+        print("Warning: No reference images found for protagonist or product. Consistency may be affected.")
+    
     for scene_dir_name in os.listdir(prompts_dir):
         scene_dir_path = os.path.join(prompts_dir, scene_dir_name)
         if os.path.isdir(scene_dir_path):

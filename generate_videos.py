@@ -5,19 +5,21 @@ import glob
 from google import genai
 from google.genai import types
 import mediapy as media
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # --- User Configuration ---
 # Please fill in your Google Cloud Project ID and a GCS bucket for video output.
-PROJECT_ID = "[your-project-id]"  # Replace with your Project ID
-LOCATION = "us-central1"
-OUTPUT_GCS_BUCKET = "gs://[your-gcs-bucket]/videos" # Replace with your GCS bucket
+PROJECT_ID = os.environ.get("PROJECT_ID")
+LOCATION = os.environ.get("LOCATION")
+OUTPUT_GCS_BUCKET = os.environ.get("OUTPUT_GCS_BUCKET")
 
 # --- Script ---
 
-def show_video(gcs_uri: str, local_path: str) -> None:
+def show_video(gcs_uri: str, local_path: str, scene_name: str) -> None:
     """Downloads a video from GCS and displays it."""
-    file_name = os.path.basename(gcs_uri)
-    local_file_path = os.path.join(local_path, file_name)
+    local_file_path = os.path.join(local_path, f"{scene_name}.mp4")
     
     # Using gsutil to copy the file. Make sure gsutil is authenticated.
     os.system(f"gsutil cp {gcs_uri} {local_file_path}")
@@ -45,31 +47,31 @@ def generate_video_for_scene(client, scene_dir, output_gcs_path, local_video_pat
     img = types.Image.from_file(location=image_path)
 
     operation = client.models.generate_videos(
-        model="veo-2.0-generate-001",
+        model="veo-3.1-generate-preview",
         image=types.Image(
             image_bytes=img.image_bytes,
             mime_type="image/png",
         ),
         config=types.GenerateVideosConfig(
             output_gcs_uri=output_gcs_uri,
-            aspect_ratio="9:16",
+            aspect_ratio="16:9",
             number_of_videos=1,
             person_generation="allow_adult",
         ),
     )
 
-    print(f"  - Video generation started. Operation: {operation.operation.name}")
+    print(f"  - Video generation started. Operation: {operation}")
     print("  - Waiting for operation to complete...")
 
     while not operation.done:
-        time.sleep(60)  # Poll every 60 seconds
+        time.sleep(30)  # Poll every 30 seconds
         operation = client.operations.get(operation)
-        print(f"  - Operation status: {operation.state}")
+        print(f"  - Operation status: {operation}")
 
     if operation.response:
         generated_video_uri = operation.result.generated_videos[0].video.uri
         print(f"  - Video generated successfully: {generated_video_uri}")
-        show_video(generated_video_uri, local_video_path)
+        show_video(generated_video_uri, scene_dir, scene_name)
     else:
         print("  - Video generation failed or returned no response.")
 
@@ -85,15 +87,12 @@ def main():
         return
 
     client = genai.Client(vertexai=True, project=PROJECT_ID, location=LOCATION)
-    
-    local_video_path = "videos"
-    os.makedirs(local_video_path, exist_ok=True)
 
     prompts_images_dir = "prompts-images"
     scene_dirs = [d for d in glob.glob(f"{prompts_images_dir}/*") if os.path.isdir(d)]
 
     for scene_dir in scene_dirs:
-        generate_video_for_scene(client, scene_dir, OUTPUT_GCS_BUCKET, local_video_path)
+        generate_video_for_scene(client, scene_dir, OUTPUT_GCS_BUCKET, scene_dir)
 
     print("\nAll scenes processed.")
 

@@ -2,10 +2,20 @@ import os
 from google import genai
 from google.genai import types
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
+PROJECT_ID = os.environ.get("PROJECT_ID")
+LOCATION = os.environ.get("LOCATION")
+
+
 def generate(prompt, reference_image, output_path):
+
   client = genai.Client(
-      vertexai=False,
-      api_key=os.environ.get("GOOGLE_CLOUD_API_KEY"),
+      vertexai=True,
+      project=PROJECT_ID,
+      location=LOCATION,
   )
 
   msg1_text1 = genai.types.Part.from_text(text=prompt)
@@ -81,8 +91,12 @@ product_description = {
 # Create a detailed prompt for the product
 product_prompt = f"A photorealistic image of {product_description['name']}, {product_description['description']}. The design is {product_description['aesthetics']}. The mood and color palette are {product_description['mood_color_palette']}. The background is white."
 
+# Create a directory for the images
+output_dir = "images"
+os.makedirs(output_dir, exist_ok=True)
+
 # Define the output path for the product image
-product_output_path = f"product_cymbal_pod.png"
+product_output_path = os.path.join(output_dir, "product_cymbal_pod.png")
 
 print(f"Generating image for product: {product_description['name']}")
 print(f"Prompt: {product_prompt}")
@@ -100,7 +114,7 @@ for angle_option in angle:
   prompt = f"A photorealistic with {angle_option} The background is white."
 
   # Define the output path
-  output_path = f"product_cymbal_pod-{angle_option}.png"
+  output_path = os.path.join(output_dir, f"product_cymbal_pod-{angle_option}.png")
 
   print(f"Generating image for product: {output_path}")
   print(f"Prompt: {prompt}")
