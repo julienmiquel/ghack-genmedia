@@ -1,6 +1,48 @@
+"Generates new image prompts for scenes based on ad copy concepts."
 
 import os
-import re
+import logging
+import io
+
+import config
+
+# Scene data based on ad-copy.md concepts
+SCENES_TO_GENERATE = {
+    "11-pain-point-ad-scene": [
+        {
+            "title": "Scene 1: The Daily Struggle",
+            "setting": "A person's messy home office, cluttered with papers and coffee cups.",
+            "action": "The person looks overwhelmed, staring at a complex spreadsheet on their computer screen with a look of frustration."
+        },
+        {
+            "title": "Scene 2: A Moment of Clarity",
+            "setting": "The same home office, but now the person is using a new, sleek software interface on their screen.",
+            "action": "The person's expression changes to one of relief and focus as they easily navigate the software. The clutter around them seems less daunting."
+        },
+        {
+            "title": "Scene 3: The Successful Outcome",
+            "setting": "A clean, organized home office. The sun is shining through the window.",
+            "action": "The person is leaning back in their chair, smiling with satisfaction at a completed project on their screen. They take a relaxed sip of coffee."
+        }
+    ],
+    "12-testimonial-ad-scene": [
+        {
+            "title": "Scene 1: The Skeptic",
+            "setting": "A person is on their laptop, looking at a product page with a skeptical expression.",
+            "action": "They are reading customer reviews, with a mix of positive and negative comments visible on the screen. They seem unsure whether to trust the product."
+        },
+        {
+            "title": "Scene 2: The Leap of Faith",
+            "setting": "The person is unboxing the product in their living room.",
+            "action": "They open the box with a sense of curiosity. The product is revealed, looking just as advertised. A small, hopeful smile appears on their face."
+        },
+        {
+            "title": "Scene 3: The Enthusiastic Advocate",
+            "setting": "The person is now talking to a friend over video call, enthusiastically showing them the product.",
+            "action": "They are passionately explaining how great the product is, pointing to its features. The friend on the screen looks impressed and intrigued."
+        }
+    ]
+}
 
 def generate_prompts_from_scene_data(scene_name, scene_data):
     """Generates image prompts from structured scene data."""
@@ -32,65 +74,40 @@ The image should be in a 16:9 format.
         
     return prompts
 
-def main():
+def run_scene_generation():
     """Main function to generate new scenes and prompts."""
-    
-    # Define scene data based on ad-copy.md concepts
-    scenes_to_generate = {
-        "11-pain-point-ad-scene": [
-            {
-                "title": "Scene 1: The Daily Struggle",
-                "setting": "A person's messy home office, cluttered with papers and coffee cups.",
-                "action": "The person looks overwhelmed, staring at a complex spreadsheet on their computer screen with a look of frustration."
-            },
-            {
-                "title": "Scene 2: A Moment of Clarity",
-                "setting": "The same home office, but now the person is using a new, sleek software interface on their screen.",
-                "action": "The person's expression changes to one of relief and focus as they easily navigate the software. The clutter around them seems less daunting."
-            },
-            {
-                "title": "Scene 3: The Successful Outcome",
-                "setting": "A clean, organized home office. The sun is shining through the window.",
-                "action": "The person is leaning back in their chair, smiling with satisfaction at a completed project on their screen. They take a relaxed sip of coffee."
-            }
-        ],
-        "12-testimonial-ad-scene": [
-            {
-                "title": "Scene 1: The Skeptic",
-                "setting": "A person is on their laptop, looking at a product page with a skeptical expression.",
-                "action": "They are reading customer reviews, with a mix of positive and negative comments visible on the screen. They seem unsure whether to trust the product."
-            },
-            {
-                "title": "Scene 2: The Leap of Faith",
-                "setting": "The person is unboxing the product in their living room.",
-                "action": "They open the box with a sense of curiosity. The product is revealed, looking just as advertised. A small, hopeful smile appears on their face."
-            },
-            {
-                "title": "Scene 3: The Enthusiastic Advocate",
-                "setting": "The person is now talking to a friend over video call, enthusiastically showing them the product.",
-                "action": "They are passionately explaining how great the product is, pointing to its features. The friend on the screen looks impressed and intrigued."
-            }
-        ]
-    }
+    log_stream = io.StringIO()
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', stream=log_stream)
 
-    output_dir = "generated-scenes"
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+    generated_files = []
+    try:
+        output_dir = config.GENERATED_SCENES_DIR
+        os.makedirs(output_dir, exist_ok=True)
 
-    for scene_name, scene_data in scenes_to_generate.items():
-        scene_dir = os.path.join(output_dir, scene_name)
-        if not os.path.exists(scene_dir):
-            os.makedirs(scene_dir)
+        for scene_name, scene_data in SCENES_TO_GENERATE.items():
+            scene_dir = os.path.join(output_dir, scene_name)
+            os.makedirs(scene_dir, exist_ok=True)
+                
+            prompts = generate_prompts_from_scene_data(scene_name, scene_data)
             
-        prompts = generate_prompts_from_scene_data(scene_name, scene_data)
-        
-        with open(os.path.join(scene_dir, "prompts.md"), "w") as prompt_file:
-            for i, prompt in enumerate(prompts):
-                prompt_file.write("--- Prompt {} ---\n".format(i + 1))
-                prompt_file.write(prompt)
-                prompt_file.write("\n")
-        
-        print(f"Generated prompts for scene: {scene_name}")
+            prompt_file_path = os.path.join(scene_dir, "prompts.md")
+            with open(prompt_file_path, "w") as prompt_file:
+                for i, prompt in enumerate(prompts):
+                    prompt_file.write(f"--- Prompt {i+1} ---\n")
+                    prompt_file.write(prompt)
+                    prompt_file.write("\n")
+            logging.info(f"Generated prompts for scene: {scene_name}")
+            generated_files.append(prompt_file_path)
+
+    except IOError as e:
+        logging.error(f"Error writing prompts: {e}")
+    
+    return generated_files, log_stream.getvalue()
 
 if __name__ == "__main__":
-    main()
+    files, logs = run_scene_generation()
+    print("--- LOGS ---")
+    print(logs)
+    print("--- GENERATED FILES ---")
+    for f in files:
+        print(f)

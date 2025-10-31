@@ -1,0 +1,21 @@
+
+[tool.poetry]
+name = "ghack-genmedia"
+version = "0.1.0"
+description = "Generative media for Cymbal Pod brand"
+authors = ["Your Name <you@example.com>"]
+
+[tool.poetry.dependencies]
+python = ">=3.9"
+google-genai = "*"
+Pillow = ">=10.0.0"
+streamlit = ">=1.35.0"
+google-cloud-aiplatform = ">=1.56.0"
+python-dotenv = ">=1.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+test = "unittest discover tests"

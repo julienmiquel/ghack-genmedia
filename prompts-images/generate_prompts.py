@@ -1,8 +1,17 @@
+
+"""Generates image prompts from scene descriptions in the 'scenes' directory."""
+
 import os
 import re
 import glob
+import logging
+
+import config
+
+SCENES_DIR = "scenes"
 
 def generate_prompts(file_content, file_name):
+    """Generates image prompts from the content of a scene file."""
     scenes = re.findall(r"### \*\*(Scene \d+:.*?)\*\*\n\n\*\*Setting:\*\*(.*?)\n\n\*\*Action/Visual:\*\*(.*?)\n\n", file_content, re.DOTALL)
     
     prompts = []
@@ -27,29 +36,40 @@ The image should be in a 16:9 format.
         
     return prompts
 
-script_dir = os.path.dirname(os.path.abspath(__file__))
-scenes_dir = os.path.join(script_dir, "..", "scenes")
-output_dir = os.path.join(script_dir)
+def main():
+    """Main function to generate prompts for all scenes."""
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-file_paths = glob.glob(os.path.join(scenes_dir, "*.md"))
+    file_paths = glob.glob(os.path.join(SCENES_DIR, "*.md"))
 
-if not os.path.exists(output_dir):
-    os.makedirs(output_dir)
+    if not file_paths:
+        logging.warning(f"No scene files found in the '{SCENES_DIR}' directory.")
+        return
 
-for file_path in file_paths:
-    with open(file_path, 'r') as f:
-        content = f.read()
-        file_name = os.path.basename(file_path)
-        scene_name = os.path.splitext(file_name)[0]
-        scene_dir = os.path.join(output_dir, scene_name)
-        
-        if not os.path.exists(scene_dir):
-            os.makedirs(scene_dir)
-            
-        prompts = generate_prompts(content, file_name)
-        
-        with open(os.path.join(scene_dir, "prompts.md"), "w") as prompt_file:
-            for i, prompt in enumerate(prompts):
-                prompt_file.write(f"--- Prompt {i+1} ---\n")
-                prompt_file.write(prompt)
-                prompt_file.write("\n")
+    output_dir = config.PROMPTS_IMAGES_DIR
+    os.makedirs(output_dir, exist_ok=True)
+
+    for file_path in file_paths:
+        try:
+            with open(file_path, 'r') as f:
+                content = f.read()
+                file_name = os.path.basename(file_path)
+                scene_name = os.path.splitext(file_name)[0]
+                scene_dir = os.path.join(output_dir, scene_name)
+                
+                os.makedirs(scene_dir, exist_ok=True)
+                    
+                prompts = generate_prompts(content, file_name)
+                
+                with open(os.path.join(scene_dir, "prompts.md"), "w") as prompt_file:
+                    for i, prompt in enumerate(prompts):
+                        prompt_file.write(f"--- Prompt {i+1} ---\n")
+                        prompt_file.write(prompt)
+                        prompt_file.write("\n")
+                logging.info(f"Generated prompts for scene: {scene_name}")
+
+        except IOError as e:
+            logging.error(f"Error processing file {file_path}: {e}")
+
+if __name__ == "__main__":
+    main()
